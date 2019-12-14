@@ -1,0 +1,20 @@
+{
+  "name": "natpagle",
+  "version": "1.0.0",
+  "description": "JavaScript 函数式编程中文翻译",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/halldwang/natpagle.git"
+  },
+  "author": "halldwang",
+  "license": "Apache License",
+  "bugs": {
+    "url": "https://github.com/halldwang/natpagle/issues"
+  },
+  "homepage": "https://github.com/halldwang/natpagle#readme"
+}
