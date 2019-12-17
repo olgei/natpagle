@@ -7,6 +7,7 @@ module.exports = {
   themeConfig: {
     repo: "halldwang/natpagle",
     docsBranch: "master",
+    docsDir: "docs",
     editLinkText: "在 GitHub 上编辑此页",
     lastUpdated: "上次更新",
     editLinks: true,

@@ -12,8 +12,8 @@ Functional Programming in JavaScript 是 javascript 函数式编程极具代表�
 
 ## 目录和章节
 
-- 目录：全书章节内容简介
-- 第一章：通过一个案例了解JavaScript语言能力
+- [目录：全书章节内容简介](https://github.ahthw.com/natpagle/book/cover-preface.html)
+- [第一章：通过一个案例了解JavaScript语言能力](https://github.ahthw.com/natpagle/book/chapter-first.html)
 - 第二章：函数式编程基础
 - 第三章：搭建函数式编程环境
 - 第四章：JavaScript中的函数式编程实现
