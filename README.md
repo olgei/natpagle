@@ -10,6 +10,18 @@ Functional Programming in JavaScript 是 javascript 函数式编程极具代表�
 
 [主站](https://github.ahthw.com/natpagle/) · [下载电子版](https://blog.ahthw.com/wp-content/uploads/2019/12/Dan_Mantyla_Functional_Programming_in_JavaScript.pdf)
 
+## 目录和章节
+
+- 目录：全书章节内容简介
+- 第一章：通过一个案例了解JavaScript语言能力
+- 第二章：函数式编程基础
+- 第三章：搭建函数式编程环境
+- 第四章：JavaScript中的函数式编程实现
+- 第五章：理论范畴
+- 第六章：JavaScript中的高级函数和陷阱话题
+- 第七章：JavaScript中的函数式和面向对象编程
+- 附录：JavaScript中常用函数的函数式方法
+
 ## 贡献内容
 
 如果你想参与这本书的共同创作，修改或添加内容，可以先 [Fork](https://github.com/halldwang/natpagle) 这本书的仓库，然后将修改的内容提交 [Pull requests](https://github.com/halldwang/natpagle/pulls) ；或者创建 [Issues](https://github.com/halldwang/natpagle/issues)。
