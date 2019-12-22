@@ -6,6 +6,8 @@
 
 Functional Programming in JavaScript 是 javascript 函数式编程极具代表性的原作书籍，由于版权原因及商业化原因，15 年出版的这本至今未被中文翻译和中文售卖，于是本人尝试着翻译，希望在翻译的过程中有所收益，欢迎朋友们加入一起翻译。
 
+本书利用业余时间翻译，如果用词错误，还请不吝赐教。
+
 ![Front End Handbook 2018 Cover](https://blog.ahthw.com/wp-content/uploads/2019/12/Functional_Programming_in_JavaScript.jpg)
 
 [主站](https://github.ahthw.com/natpagle/) · [下载电子版](https://blog.ahthw.com/wp-content/uploads/2019/12/Dan_Mantyla_Functional_Programming_in_JavaScript.pdf)
