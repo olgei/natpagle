@@ -302,4 +302,377 @@ console.log(hexs(11)); // returns function
 console.log(hexs(110)(12)(0)); // incorrect
 ```
 
-因此，currying不能与接受可变数量的参数的函数配合使用。 对于这种情况，首选部局部应用。这些不仅是为了函数工厂和代码重用。 柯里化和局部应用会发挥更大的作用，称为组合模式(Function composition)。
+因此，currying不能与接受可变数量的参数的函数配合使用。 对于这种情况，首选部局部应用。这些不仅是为了函数工厂和代码重用。 柯里化和局部应用会发挥更大的作用，称为函数组合(Function composition)。
+
+## 函数组合
+
+最后，我们来到了函数组合。
+
+在函数式编程中，我们希望一切都成为函数。 如果可能，我们特别希望一元函数。 如果我们可以将所有函数转换为一元函数，那么神奇的事情就会发生。
+
+`一元函数是仅接受单个输入的函数。 具有多个输入的函数是双元函数，但是对于接受两个输入的函数，我们通常说成二进制，对于三个输入的函数，我们通常说成三进制。 某些功能不接受特定数量的输入。 我们称这些为可变参数。`
+
+本小节中，我们将探讨如何从较小的函数组成新的函数：将很小的逻辑单元组合成整个方法，这些逻辑单元大于单独的函数之和。
+
+### 组合
+
+组合函数使我们可以从许多简单的通用函数中构建复杂的函数。 通过将功能视为其他功能的构建块，我们可以构建具有出色可读性和可维护性的真正模块化应用程序。
+
+在定义compose() polyfill之前，可以通过以下示例了解工作方式：
+
+```js
+var roundedSqrt = Math.round.compose(Math.sqrt);
+console.log(roundedSqrt(5)); // Returns: 2
+
+var squaredDate = roundedSqrt.compose(Date.parse)
+console.log( squaredDate("January 1, 2014") ); // Returns: 1178370
+```
+
+在数学上，将f和g变量的组成定义为f(g(x))。在JavaScript中，可以这样写：
+
+```js
+var compose = function(f, g) {
+  return function(x) {
+    return f(g(x));
+  };
+};
+```
+
+如果我们不这样做，除其他问题外，我们将无法找到此关键字。 解决方案是使用apply()和call()。 与curry相比，compose() polyfill方式非常简单。
+
+```js
+Function.prototype.compose = function(prevFunc) {
+  var nextFunc = this;
+  return function() {
+    return nextFunc.call(this, prevFunc.apply(this, arguments));
+  };
+};
+```
+
+为了展示其用法，让我们构建一个完整的示例，如下所示：
+
+```js
+function function1(a) {
+  return a + " 1";
+}
+function function2(b) {
+  return b + " 2";
+}
+function function3(c) {
+  return c + " 3";
+}
+var composition = function3.compose(function2).compose(function1);
+console.log(composition("count")); // returns 'count 1 2 3'
+```
+
+是否注意到首先应用了function3参数？ 功能从右到左应用，这个非常重要。
+
+### 反向组合
+
+因为许多人喜欢从左到右阅读内容，所以按此顺序应用功能也很有意义。 我们称其为序列而不是合成。
+
+要颠倒顺序，我们需要做的就是交换`nextFunc`和`prevFunc`参数。
+
+```js
+Function.prototype.sequence = function(prevFunc) {
+  var nextFunc = this;
+  return function() {
+    return prevFunc.call(this, nextFunc.apply(this, arguments));
+  };
+};
+```
+
+这使我们现在可以更自然地调用函数。
+
+```js
+var sequences = function1.sequence(function2).sequence(function3);
+console.log(sequences("count")); // returns 'count 1 2 3'
+```
+
+### 组合与链式
+
+这是同一floorSqrt()函数组成的五个不同实现。 它们似乎是相同的，但值得仔细检查。
+
+```js
+function floorSqrt1(num) {
+  var sqrtNum = Math.sqrt(num);
+  var floorSqrt = Math.floor(sqrtNum);
+  var stringNum = String(floorSqrt);
+  return stringNum;
+}
+
+function floorSqrt2(num) {
+  return String(Math.floor(Math.sqrt(num)));
+}
+
+function floorSqrt3(num) {
+  return [num]
+    .map(Math.sqrt)
+    .map(Math.floor)
+    .toString();
+}
+var floorSqrt4 = String.compose(Math.floor).compose(Math.sqrt);
+
+var floorSqrt5 = Math.sqrt.sequence(Math.floor).sequence(String);
+
+// all functions can be called like this:
+floorSqrt < N > 17; // Returns: 4
+```
+
+但有几个关键的区别，我们应该回顾一下：
+
+- 显然，第一种方法冗长且效率低下。
+- 第二种方法是很好的一行程序，但是这种方法在只应用了几个函数之后就变得非常不可读了。
+
+`如果说代码越少越好，那就没有意义了。当有效的指令更简洁时，代码更易于维护。如果在不更改执行的有效指令的情况下减少代码字符数，则会导致完全相反的效果：代码变得更难理解，而且不易维护；例如，当我们使用嵌套的三元运算符或将多个命令连在一行上时。这些方法减少了代码量，但并没有减少该代码实际指定的步骤的数量。因此，这样做的结果是混淆并使代码更难理解。使代码更易于维护的一种简洁性是，它有效地减少了指定的指令（例如，通过使用更简单的算法，用更少和/或更简单的步骤来实现相同的结果），或者当我们简单地用消息替换代码时，例如，用有良好文档记录的API调用第三方库。`
+
+- 第三种方法是一系列数组函数，尤其是map函数。 这样写没问题，但在数学上不正确。
+- 这是我们正在使用的compose()函数。所有方法都必须是一元的纯函数，这些函数鼓励使用更好，更简单和更小的函数来完成一件事并做好。
+- 最后一种方法反向组合使用compose()函数，同样有效。
+
+### 组合编程
+
+compose最重要的是，除了应用的第一个函数外，它还与纯一元函数（仅接受一个参数的函数）一起使用效果最佳。
+
+所应用的第一个功能的输出将发送到下一个功能。 这意味着该函数必须接受先前传递给它的函数。 这是类型签名背后的主要影响。
+
+`类型签名用于显式声明函数接受的输入类型和输出的类型。最初由Haskell使用，Haskell实际上在编译器要使用的函数定义中使用它们。但是，在JavaScript中，我们只是将它们放在代码注释中。它们看起来像这样：foo :: arg1 -> argN -> output`
+
+示例：
+
+```js
+// getStringLength :: String -> Int
+function getStringLength(s){return s.length};
+// concatDates :: Date -> Date -> [Date]
+function concatDates(d1,d2){return [d1, d2]};
+// pureFunc :: (int -> Bool) -> [int] -> [int]
+pureFunc(func, arr){return arr.filter(func)}
+```
+
+为了真正获得compose的好处，任何应用程序都需要大量的一元、纯函数集合。这些是组成更大功能的构建块，反过来，这些功能又用于使应用程序非常模块化、可靠和可维护。
+
+让我们举个例子。首先，我们需要许多构建块函数。其中一些建立在其他基础之上，如下所示：
+
+```js
+// stringToArray :: String -> [Char]
+function stringToArray(s) {
+  return s.split("");
+}
+// arrayToString :: [Char] -> String
+function arrayToString(a) {
+  return a.join("");
+}
+// nextChar :: Char -> Char
+function nextChar(c) {
+  return String.fromCharCode(c.charCodeAt(0) + 1);
+}
+// previousChar :: Char -> Char
+function previousChar(c) {
+  return String.fromCharCode(c.charCodeAt(0) - 1);
+}
+// higherColorHex :: Char -> Char
+function higherColorHex(c) {
+  return c >= "f" ? "f" : c == "9" ? "a" : nextChar(c);
+}
+// lowerColorHex :: Char -> Char
+function lowerColorHex(c) {
+  return c <= "0" ? "0" : c == "a" ? "9" : previousChar(c);
+}
+// raiseColorHexes :: String -> String
+function raiseColorHexes(arr) {
+  return arr.map(higherColorHex);
+}
+// lowerColorHexes :: String -> String
+function lowerColorHexes(arr) {
+  return arr.map(lowerColorHex);
+}
+```
+
+让我们把它们组合在一起。
+
+```js
+var lighterColor = arrayToString
+  .compose(raiseColorHexes)
+  .compose(stringToArray);
+var darkerColor = arrayToString.compose(lowerColorHexes).compose(stringToArray);
+console.log(lighterColor("af0189")); // Returns: 'bf129a'
+console.log(darkerColor("af0189")); // Returns: '9e0078'
+```
+
+我们甚至可以一起使用compose（）和curry（）函数。 实际上，他们在一起工作得很好。 让我们将curry示例与我们的compose示例结合在一起。 首先，我们需要以前的帮助程序功能。
+
+我们甚至可以同时使用compose()和curry()函数。它们搭配使用效果很好。让我们将curry示例与我们的compose示例结合在一起。我们需要上上小结的函数方法。
+
+```js
+// component2hex :: Ints -> Int
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+// nums2hex :: Ints* -> Int
+function nums2hex() {
+  return Array.prototype.map.call(arguments, componentToHex).join("");
+}
+```
+
+我们创建柯里函数和部分应用的函数，然后将它们组合到其他组合函数中。
+
+```js
+var lighterColors = lighterColor.compose(nums2hex.curry());
+
+var darkerRed = darkerColor.compose(nums2hex.partialApply(255));
+
+var lighterRgb2hex = lighterColor.compose(nums2hex.partialApply());
+
+console.log(lighterColors(123, 0, 22)); // Returns: 8cff11
+console.log(darkerRed(123, 0)); // Returns: ee6a00
+console.log(lighterRgb2hex(123, 200, 100)); // Returns: 8cd975
+```
+
+以上函数整体不错。我们从一件事的小功能开始。然后我们就可以把功能组合在一起了。
+
+让我们看最后一个例子。 这是一个可将可变值的RGB值变亮的函数。 然后，我们可以使用组合从中创建新功能。
+
+```js
+// lighterColorNumSteps :: string -> num -> string
+function lighterColorNumSteps(color, n) {
+  for (var i = 0; i < n; i++) {
+    color = lighterColor(color);
+  }
+  return color;
+}
+
+// now we can create functions like this:
+var lighterRedNumSteps = lighterColorNumSteps.curry().compose(reds)(0, 0);
+// and use them like this:
+console.log(lighterRedNumSteps(5)); // Return: 'ff5555'
+console.log(lighterRedNumSteps(2)); // Return: 'ff2222'
+```
+
+同样，我们可以轻松创建更多功能，以创建更浅和更深的蓝色，绿色，灰色，紫色或任何想要的颜色。 这是构造API的绝佳方法。
+
+我们只是勉强了解函数组合可以做什么。 compose所做的是从JavaScript中夺走控制权。 通常，JavaScript将从左到右求值，但是现在解释器会说“好吧，其他的事情会处理好的，我就转到下一个。”现在compose()函数可以控制序列求值了！
+
+这就是Lazy.js，Bacon.js和其他人能够实现诸如惰性求值和无限序列之类的方式的方式。 接下来，我们将研究如何使用这些库。
+
+## 主要函数式编程
+
+什么是没有副作用的程序？答案是：一个什么也不做的程序。
+
+用具有不可避免的副作用的函数式代码来补充我们的代码可以称为“主要函数式编程”。在同一个代码库中使用多个范例并在它们最理想的地方应用它们是最好的方法。大多数情况下，函数式编程是建模纯传统函数式程序的方式：：将大部分逻辑保持在纯函数中，并与命令式代码接口。
+
+这就是我们要编写自己的：‘a little application’编程方式。
+
+在这个例子中，我们有一个老板告诉我们，我们需要一个用于跟踪员工可用性状态的web应用程序。这家虚构公司的所有员工只有一个工作：使用我们的网站。员工上班时会签到，离开时会签退。但这还不够，它还需要随着内容的变化自动更新内容，因此我们的老板不必不断刷新页面。
+
+我们将使用Lazy.js作为我们的功能库：我们不必假装要处理所有登录和注销的用户，WebSocket，数据库等等，而是假装有一个通用应用程序对象为我们完成此任务的完美API。
+
+所以现在，让我们把丑陋的部分，界面和创造副作用的部分去掉。
+
+```js
+function Receptor(name, available) {
+  this.name = name;
+  this.available = available; // mutable state
+
+  this.render = function() {
+    output = "<li>";
+    output += this.available
+      ? this.name + " is available"
+      : this.name + " is not available";
+    output += "</li>";
+    return output;
+  };
+}
+var me = new Receptor();
+var receptors = app.getReceptors().push(me);
+app.container.innerHTML = receptors
+  .map(function(r) {
+    return r.render();
+  })
+  .join("");
+```
+
+仅显示可用性列表就足够了，但我们希望它是反响应式的，这会给我们带来第一个难点。
+
+通过使用Lazy.js库按顺序存储对象（在调用toArray()方法之前它实际上不会计算任何东西），我们可以利用其惰性求值来提供一种功能性的响应式编程。
+
+```js
+var lazyReceptors = Lazy(receptors).map(function(r) {
+  return r.render();
+});
+app.container.innerHTML = lazyReceptors.toArray().join("");
+```
+
+因为Receptor.render()方法返回新的HTML而不是修改当前HTML，所以我们要做的就是将innerHTML参数设置为其输出。
+
+用于用户管理的通用应用程序将提供回调方法供我们使用。
+
+```js
+app.onUserLogin = function() {
+  this.available = true;
+  app.container.innerHTML = lazyReceptors.toArray().join("");
+};
+app.onUserLogout = function() {
+  this.available = false;
+  app.container.innerHTML = lazyReceptors.toArray().join("");
+};
+```
+
+这样，用户每次登录或注销时，都会再次计算lazyReceptors参数，并且将使用最新值打印可用性列表。
+
+## 事件处理
+
+如果应用程序不提供用户登录和注销时的回调该怎么办？ 回调很混乱，代码就变成了面条式代码。相反，我们可以通过直接观察用户来确定它。如果用户的网页处于焦点位置，则他/她必须处于活动状态且可用。我们可以使用JavaScript的focus和blur事件。
+
+```js
+window.addEventListener("focus", function(event) {
+  me.available = true;
+  app.setReceptor(me.name, me.available); // just go with it
+  container.innerHTML = lazyReceptors.toArray().join("");
+});
+window.addEventListener("blur", function(event) {
+  me.available = false;
+  app.setReceptor(me.name, me.available);
+  container.innerHTML = lazyReceptors.toArray().join("");
+});
+```
+
+等一下，事件不是也有响应式吗？ 也可以惰性计算它们吗？ 在Lazy.js库中，甚至有一个方便的方法。
+
+```js
+var focusedReceptors = Lazy.events(window, "focus").each(function(e) {
+  me.available = true;
+  app.setReceptor(me.name, me.available);
+  container.innerHTML = lazyReceptors.toArray().join("");
+});
+var blurredReceptors = Lazy.events(window, "blur").each(function(e) {
+  me.available = false;
+  app.setReceptor(me.name, me.available);
+  container.innerHTML = lazyReceptors.toArray().join("");
+});
+```
+
+以上非常简单。
+
+`通过使用Lazy.js库处理事件，我们可以创建无限个事件序列。 每次触发事件时，Lazy.each()函数都可以迭代一次。`
+
+到目前为止，我们的老板很喜欢这个应用程序，但他指出，如果一名员工在离开前一天没有关闭页面就从不注销，那么该应用程序会记录该员工仍然工作。
+
+为了确定某个员工是否在网站上处于活动状态，我们可以监视键盘和鼠标事件。假设他们被认为在30分钟没有活动之后就不可用了。
+
+```js
+var timeout = null;
+var inputs = Lazy.events(window, "mousemove").each(function(e) {
+  me.available = true;
+  container.innerHTML = lazyReceptors.toArray().join("");
+  clearTimeout(timeout);
+  timeout = setTimeout(function() {
+    me.available = false;
+    container.innerHTML = lazyReceptors.toArray().join("");
+  }, 1800000); // 30 minutes
+});
+```
+
+Lazy.js库使我们很容易将事件处理为可以映射的无限流。它之所以能够做到这一点，是因为它使用函数组合来控制执行顺序。
+
+但这一切都有点问题。如果没有可以锁定的用户输入事件呢？如果有一个属性值一直在变化呢？在下一节中，我们将详细分析这个问题。

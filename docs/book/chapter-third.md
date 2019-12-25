@@ -461,9 +461,7 @@ Although never is often better than "right" now.
 If the implementation is hard to explain, it's a bad idea.
 If the implementation is easy to explain, it may be a good idea.
 Namespaces are one honking great idea—let's do more of those!
-```
 
-```text
 优美胜于丑陋（Python 以编写优美的代码为目标）
 明了胜于晦涩（优美的代码应当是明了的，命名规范，风格相似）
 简洁胜于复杂（优美的代码应当是简洁的，不要有复杂的内部实现）
