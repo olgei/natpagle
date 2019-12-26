@@ -9,7 +9,7 @@
 - 在函数式编程模式相互构建的过程中逐步编写它们的逻辑过程
 - 我们将构建一个简单的程序，完成一些非常酷的功能
 
-上一章中提出了一些函数式编程概念，但在第2章“函数编程的基本原理”中没有提到。那是有原因的！Compositions, currying, partial application，等等。让我们来学习这些库为什么以及如何实现这些概念。
+上一章中提出了一些函数式编程概念，但在第 2 章“函数编程的基本原理”中没有提到。那是有原因的！Compositions, currying, partial application，等等。让我们来学习这些库为什么以及如何实现这些概念。
 
 函数式编程可以有多种风格和模式。本章将介绍许多不同风格的函数式编程：
 
@@ -21,28 +21,28 @@
 
 ## 函数局部应用和柯里化
 
-许多语言支持可选参数，但在JavaScript中不支持。JavaScript使用完全不同的模式，允许向函数传递任意数量的参数。这就为一些非常有趣和不同寻常的设计模式打开了大门。函数可以部分或全部应用。
+许多语言支持可选参数，但在 JavaScript 中不支持。JavaScript 使用完全不同的模式，允许向函数传递任意数量的参数。这就为一些非常有趣和不同寻常的设计模式打开了大门。函数可以部分或全部应用。
 
-JavaScript中的部分应用程序是将值绑定到函数的一个或多个参数的过程，该函数返回另一个接受其余未绑定参数的函数。类似地，curring是将具有多个参数的函数转换为具有一个参数的函数的过程，该参数返回另一个根据需要接受更多参数的函数。
+JavaScript 中的部分应用程序是将值绑定到函数的一个或多个参数的过程，该函数返回另一个接受其余未绑定参数的函数。类似地，curring 是将具有多个参数的函数转换为具有一个参数的函数的过程，该参数返回另一个根据需要接受更多参数的函数。
 
 两者之间的区别现在可能还不清楚，但最终会差异很大。
 
 ## 函数操作
 
-实际上，在我们进一步解释如何实现偏函数应用和柯里化之前，我们需要做一个系统回顾。我们要探索JavaScriptC语言，暴露它的功能底层，我们需要了解JavaScript中的原函数、函数和原型是如何工作的；如果我们只是想设置一些cookie或验证一些表单字段，我们就不需要考虑这些。
+实际上，在我们进一步解释如何实现偏函数应用和柯里化之前，我们需要做一个系统回顾。我们要探索 JavaScriptC 语言，暴露它的功能底层，我们需要了解 JavaScript 中的原函数、函数和原型是如何工作的；如果我们只是想设置一些 cookie 或验证一些表单字段，我们就不需要考虑这些。
 
-### apply、call和this关键字
+### apply、call 和 this 关键字
 
-在纯函数式语言中，函数不被调用；而是被应用。JavaScript也以同样的方式工作，甚至提供了手动调用和应用函数的实用程序。这都是关于`this`关键字的，当然也是函数所属的对象。
+在纯函数式语言中，函数不被调用；而是被应用。JavaScript 也以同样的方式工作，甚至提供了手动调用和应用函数的实用程序。这都是关于`this`关键字的，当然也是函数所属的对象。
 
-使用call()函数可以将this关键字定义为第一个参数。 其工作方式如下：
+使用 call()函数可以将 this 关键字定义为第一个参数。 其工作方式如下：
 
 ```js
 console.log(["Hello", "world"].join(" ")); // normal way
 console.log(Array.prototype.join.call(["Hello", "world"], " ")); // using call
 ```
 
-可以使用call()函数来调用匿名函数:
+可以使用 call()函数来调用匿名函数:
 
 ```js
 console.log(
@@ -52,7 +52,7 @@ console.log(
 );
 ```
 
-apply()函数与call()函数非常相似，但更有用：
+apply()函数与 call()函数非常相似，但更有用：
 
 ```js
 console.log(Math.max(1, 2, 3)); // returns 3
@@ -60,11 +60,11 @@ console.log(Math.max([1, 2, 3])); // won't work for arrays though
 console.log(Math.max.apply(null, [1, 2, 3])); // but this will work
 ```
 
-根本的区别是，尽管call()函数接受参数列表，而apply()函数接受参数数组。
+根本的区别是，尽管 call()函数接受参数列表，而 apply()函数接受参数数组。
 
-call()和apply()函数允许你编写一次函数，然后在其他对象中继承它，而无需再次编写函数。它们都是Function参数的成员。
+call()和 apply()函数允许你编写一次函数，然后在其他对象中继承它，而无需再次编写函数。它们都是 Function 参数的成员。
 
-> 当你自己使用call()函数时，可能会发生一些非常有意思的事情：
+> 当你自己使用 call()函数时，可能会发生一些非常有意思的事情：
 
 ```js
 // 两者相等
@@ -74,7 +74,7 @@ Function.prototype.call.call（func，thisValue）;
 
 ## 绑定参数
 
-bind()函数的作用是：将一个方法应用于一个对象，并将这个this关键字分配给另一个对象。在内部，它与call()函数相同，但它链接到该方法并返回一个新的有界函数。
+bind()函数的作用是：将一个方法应用于一个对象，并将这个 this 关键字分配给另一个对象。在内部，它与 call()函数相同，但它链接到该方法并返回一个新的有界函数。
 
 它对于回调特别有用，如下代码片段所示：
 
@@ -90,11 +90,11 @@ var drum = new Drum();
 setInterval(drum.goBoom.bind(drum), drum.duration);
 ```
 
-这解决了诸如Dojo.js之类的面向对象框架中的许多问题，特别是在使用定义自己的处理函数的类时维护状态的问题。 但是我们也可以将bind()函数用于函数式编程。
+这解决了诸如 Dojo.js 之类的面向对象框架中的许多问题，特别是在使用定义自己的处理函数的类时维护状态的问题。 但是我们也可以将 bind()函数用于函数式编程。
 
 ## 函数工厂
 
-还记得第二章“函数式编程基础知识”中有关闭包的部分吗？ 闭包是使可以创建有用的JavaScript编程模式（称为函数工厂）的构造。 它们允许我们手动将参数绑定到函数。
+还记得第二章“函数式编程基础知识”中有关闭包的部分吗？ 闭包是使可以创建有用的 JavaScript 编程模式（称为函数工厂）的构造。 它们允许我们手动将参数绑定到函数。
 
 首先，我们需要一个将参数绑定到另一个函数的函数：
 
@@ -130,7 +130,7 @@ console.log(cubeOf(3)); // 27
 console.log(cubeOf(4)); // 64
 ```
 
-创建泛型函数的功能在函数编程中非常重要。 但是，有一个巧妙的技巧可以使此过程更加通用。 bindFirstArg()函数本身带有两个参数，第一个是函数。 如果我们将bindFirstArg函数作为函数传递给自身，则可以创建可绑定函数。 可以通过以下示例对此进行最好的描述：
+创建泛型函数的功能在函数编程中非常重要。 但是，有一个巧妙的技巧可以使此过程更加通用。 bindFirstArg()函数本身带有两个参数，第一个是函数。 如果我们将 bindFirstArg 函数作为函数传递给自身，则可以创建可绑定函数。 可以通过以下示例对此进行最好的描述：
 
 ```js
 var makePowersOf = bindFirstArg(bindFirstArg, Math.pow);
@@ -143,11 +143,11 @@ console.log(powersOfThree(3)); // 27
 
 ## 局部应用
 
-需要注意的是，我们的函数工厂示例的bindFirstArg()和bindSecondArg()函数只适用于只有两个参数的函数。我们可以为不同数量的论据编写新的论据，但这会偏离我们的概括。我们需要的是局部应用。
+需要注意的是，我们的函数工厂示例的 bindFirstArg()和 bindSecondArg()函数只适用于只有两个参数的函数。我们可以为不同数量的论据编写新的论据，但这会偏离我们的概括。我们需要的是局部应用。
 
 在哪里需要局部应用？
 
-与bind()函数和Function对象的其他内置方法不同，我们必须为局部应用和currying创建自己的函数。 有两种不同的方法可以做到这一点。
+与 bind()函数和 Function 对象的其他内置方法不同，我们必须为局部应用和 currying 创建自己的函数。 有两种不同的方法可以做到这一点。
 
 ```js
 var partial = function(func){... // As a stand-alone function
@@ -158,7 +158,7 @@ Function.prototype.partial = function(){... // As a polyfill
 
 ### 从左侧局部应用
 
-这是JavaScript的apply()和call()实用程序对我们有用的地方。 让我们看一下Function对象的可能的polyfill：
+这是 JavaScript 的 apply()和 call()实用程序对我们有用的地方。 让我们看一下 Function 对象的可能的 polyfill：
 
 ```js
 Function.prototype.partialApply = function() {
@@ -209,7 +209,7 @@ console.log(shadesOfRed(100, 200)); // 'ff64c8'
 
 ### 从右侧局部应用
 
-为了从右边应用参数，我们可以定义另一个polyfill。
+为了从右边应用参数，我们可以定义另一个 polyfill。
 
 ```js
 Function.prototype.partialApplyRight = function() {
@@ -231,11 +231,11 @@ console.log(shadesOfGreen(100)); // '64ff00'
 
 ## 柯里化
 
-柯里化是将具有多个参数的函数转换为具有一个参数的函数的过程，该函数返回另一个需要根据需要使用更多参数的函数。 形式上，具有N个参数的函数可以转换为N个函数的函数链，每个函数只有一个参数。
+柯里化是将具有多个参数的函数转换为具有一个参数的函数的过程，该函数返回另一个需要根据需要使用更多参数的函数。 形式上，具有 N 个参数的函数可以转换为 N 个函数的函数链，每个函数只有一个参数。
 
 一个常见的问题是：局部应用和柯里化有什么区别？ 的确，局部应用立即返回了一个值，而柯里化仅返回另一个接受下一个参数的柯里化函数，但根本的区别在于柯里可以更好地控制如何将参数传递给函数。 我们将看到这是怎么回事，但是首先我们需要创建函数来执行该计算。
 
-这是我们为函数原型添加curring的polyfill：
+这是我们为函数原型添加 curring 的 polyfill：
 
 ```js
 Function.prototype.curry = function(numArgs) {
@@ -258,9 +258,9 @@ Function.prototype.curry = function(numArgs) {
 };
 ```
 
-numArgs参数使我们可以选择指定未明确定义的函数所需要的参数数量。
+numArgs 参数使我们可以选择指定未明确定义的函数所需要的参数数量。
 
-让我们看看如何在十六进制转化方法中使用它。 编写一个将RGB值转换为适合HTML的十六进制字符串的函数：
+让我们看看如何在十六进制转化方法中使用它。 编写一个将 RGB 值转换为适合 HTML 的十六进制字符串的函数：
 
 ```js
 function rgb2hex(r, g, b) {
@@ -274,7 +274,7 @@ console.log(hexColors(11)(12)(123)); // returns #0b0c7b
 console.log(hexColors(210)(12)(0)); // returns #d20c00
 ```
 
-它将返回curried函数，直到传递了所有需要的参数为止。它们以与curryed函数定义的相同的顺序从左到右传递。
+它将返回 curried 函数，直到传递了所有需要的参数为止。它们以与 curryed 函数定义的相同的顺序从左到右传递。
 
 但是我们可以将其提高一个级别，并定义我们需要的更具体的功能，如下所示：
 
@@ -293,7 +293,7 @@ console.log(greens(11, 12)); // returns #0bff0c
 console.log(blues(11, 12)); // returns #0b0cff
 ```
 
-因此，这是使用currying的好方法。 但是，如果我们只想直接使用nums2hex()函数，则会遇到一些麻烦。 因为该函数没有定义任何参数，它只是需要传递尽可能多的参数。 我们必须定义参数的数量。 我们使用curry函数的可选参数，该参数允许我们设置正在curry函数的参数数量。
+因此，这是使用 currying 的好方法。 但是，如果我们只想直接使用 nums2hex()函数，则会遇到一些麻烦。 因为该函数没有定义任何参数，它只是需要传递尽可能多的参数。 我们必须定义参数的数量。 我们使用 curry 函数的可选参数，该参数允许我们设置正在 curry 函数的参数数量。
 
 ```js
 var hexs = nums2hex.curry(2);
@@ -302,7 +302,7 @@ console.log(hexs(11)); // returns function
 console.log(hexs(110)(12)(0)); // incorrect
 ```
 
-因此，currying不能与接受可变数量的参数的函数配合使用。 对于这种情况，首选部局部应用。这些不仅是为了函数工厂和代码重用。 柯里化和局部应用会发挥更大的作用，称为函数组合(Function composition)。
+因此，currying 不能与接受可变数量的参数的函数配合使用。 对于这种情况，首选部局部应用。这些不仅是为了函数工厂和代码重用。 柯里化和局部应用会发挥更大的作用，称为函数组合(Function composition)。
 
 ## 函数组合
 
@@ -318,17 +318,17 @@ console.log(hexs(110)(12)(0)); // incorrect
 
 组合函数使我们可以从许多简单的通用函数中构建复杂的函数。 通过将功能视为其他功能的构建块，我们可以构建具有出色可读性和可维护性的真正模块化应用程序。
 
-在定义compose() polyfill之前，可以通过以下示例了解工作方式：
+在定义 compose() polyfill 之前，可以通过以下示例了解工作方式：
 
 ```js
 var roundedSqrt = Math.round.compose(Math.sqrt);
 console.log(roundedSqrt(5)); // Returns: 2
 
-var squaredDate = roundedSqrt.compose(Date.parse)
-console.log( squaredDate("January 1, 2014") ); // Returns: 1178370
+var squaredDate = roundedSqrt.compose(Date.parse);
+console.log(squaredDate("January 1, 2014")); // Returns: 1178370
 ```
 
-在数学上，将f和g变量的组成定义为f(g(x))。在JavaScript中，可以这样写：
+在数学上，将 f 和 g 变量的组成定义为 f(g(x))。在 JavaScript 中，可以这样写：
 
 ```js
 var compose = function(f, g) {
@@ -338,7 +338,7 @@ var compose = function(f, g) {
 };
 ```
 
-如果我们不这样做，除其他问题外，我们将无法找到此关键字。 解决方案是使用apply()和call()。 与curry相比，compose() polyfill方式非常简单。
+如果我们不这样做，除其他问题外，我们将无法找到此关键字。 解决方案是使用 apply()和 call()。 与 curry 相比，compose() polyfill 方式非常简单。
 
 ```js
 Function.prototype.compose = function(prevFunc) {
@@ -365,7 +365,7 @@ var composition = function3.compose(function2).compose(function1);
 console.log(composition("count")); // returns 'count 1 2 3'
 ```
 
-是否注意到首先应用了function3参数？ 功能从右到左应用，这个非常重要。
+是否注意到首先应用了 function3 参数？ 功能从右到左应用，这个非常重要。
 
 ### 反向组合
 
@@ -391,7 +391,7 @@ console.log(sequences("count")); // returns 'count 1 2 3'
 
 ### 组合与链式
 
-这是同一floorSqrt()函数组成的五个不同实现。 它们似乎是相同的，但值得仔细检查。
+这是同一 floorSqrt()函数组成的五个不同实现。 它们似乎是相同的，但值得仔细检查。
 
 ```js
 function floorSqrt1(num) {
@@ -426,13 +426,13 @@ floorSqrt < N > 17; // Returns: 4
 
 `如果说代码越少越好，那就没有意义了。当有效的指令更简洁时，代码更易于维护。如果在不更改执行的有效指令的情况下减少代码字符数，则会导致完全相反的效果：代码变得更难理解，而且不易维护；例如，当我们使用嵌套的三元运算符或将多个命令连在一行上时。这些方法减少了代码量，但并没有减少该代码实际指定的步骤的数量。因此，这样做的结果是混淆并使代码更难理解。使代码更易于维护的一种简洁性是，它有效地减少了指定的指令（例如，通过使用更简单的算法，用更少和/或更简单的步骤来实现相同的结果），或者当我们简单地用消息替换代码时，例如，用有良好文档记录的API调用第三方库。`
 
-- 第三种方法是一系列数组函数，尤其是map函数。 这样写没问题，但在数学上不正确。
-- 这是我们正在使用的compose()函数。所有方法都必须是一元的纯函数，这些函数鼓励使用更好，更简单和更小的函数来完成一件事并做好。
-- 最后一种方法反向组合使用compose()函数，同样有效。
+- 第三种方法是一系列数组函数，尤其是 map 函数。 这样写没问题，但在数学上不正确。
+- 这是我们正在使用的 compose()函数。所有方法都必须是一元的纯函数，这些函数鼓励使用更好，更简单和更小的函数来完成一件事并做好。
+- 最后一种方法反向组合使用 compose()函数，同样有效。
 
 ### 组合编程
 
-compose最重要的是，除了应用的第一个函数外，它还与纯一元函数（仅接受一个参数的函数）一起使用效果最佳。
+compose 最重要的是，除了应用的第一个函数外，它还与纯一元函数（仅接受一个参数的函数）一起使用效果最佳。
 
 所应用的第一个功能的输出将发送到下一个功能。 这意味着该函数必须接受先前传递给它的函数。 这是类型签名背后的主要影响。
 
@@ -449,7 +449,7 @@ function concatDates(d1,d2){return [d1, d2]};
 pureFunc(func, arr){return arr.filter(func)}
 ```
 
-为了真正获得compose的好处，任何应用程序都需要大量的一元、纯函数集合。这些是组成更大功能的构建块，反过来，这些功能又用于使应用程序非常模块化、可靠和可维护。
+为了真正获得 compose 的好处，任何应用程序都需要大量的一元、纯函数集合。这些是组成更大功能的构建块，反过来，这些功能又用于使应用程序非常模块化、可靠和可维护。
 
 让我们举个例子。首先，我们需要许多构建块函数。其中一些建立在其他基础之上，如下所示：
 
@@ -499,9 +499,9 @@ console.log(lighterColor("af0189")); // Returns: 'bf129a'
 console.log(darkerColor("af0189")); // Returns: '9e0078'
 ```
 
-我们甚至可以一起使用compose（）和curry（）函数。 实际上，他们在一起工作得很好。 让我们将curry示例与我们的compose示例结合在一起。 首先，我们需要以前的帮助程序功能。
+我们甚至可以一起使用 compose（）和 curry（）函数。 实际上，他们在一起工作得很好。 让我们将 curry 示例与我们的 compose 示例结合在一起。 首先，我们需要以前的帮助程序功能。
 
-我们甚至可以同时使用compose()和curry()函数。它们搭配使用效果很好。让我们将curry示例与我们的compose示例结合在一起。我们需要上上小结的函数方法。
+我们甚至可以同时使用 compose()和 curry()函数。它们搭配使用效果很好。让我们将 curry 示例与我们的 compose 示例结合在一起。我们需要上上小结的函数方法。
 
 ```js
 // component2hex :: Ints -> Int
@@ -531,7 +531,7 @@ console.log(lighterRgb2hex(123, 200, 100)); // Returns: 8cd975
 
 以上函数整体不错。我们从一件事的小功能开始。然后我们就可以把功能组合在一起了。
 
-让我们看最后一个例子。 这是一个可将可变值的RGB值变亮的函数。 然后，我们可以使用组合从中创建新功能。
+让我们看最后一个例子。 这是一个可将可变值的 RGB 值变亮的函数。 然后，我们可以使用组合从中创建新功能。
 
 ```js
 // lighterColorNumSteps :: string -> num -> string
@@ -549,11 +549,11 @@ console.log(lighterRedNumSteps(5)); // Return: 'ff5555'
 console.log(lighterRedNumSteps(2)); // Return: 'ff2222'
 ```
 
-同样，我们可以轻松创建更多功能，以创建更浅和更深的蓝色，绿色，灰色，紫色或任何想要的颜色。 这是构造API的绝佳方法。
+同样，我们可以轻松创建更多功能，以创建更浅和更深的蓝色，绿色，灰色，紫色或任何想要的颜色。 这是构造 API 的绝佳方法。
 
-我们只是勉强了解函数组合可以做什么。 compose所做的是从JavaScript中夺走控制权。 通常，JavaScript将从左到右求值，但是现在解释器会说“好吧，其他的事情会处理好的，我就转到下一个。”现在compose()函数可以控制序列求值了！
+我们只是勉强了解函数组合可以做什么。 compose 所做的是从 JavaScript 中夺走控制权。 通常，JavaScript 将从左到右求值，但是现在解释器会说“好吧，其他的事情会处理好的，我就转到下一个。”现在 compose()函数可以控制序列求值了！
 
-这就是Lazy.js，Bacon.js和其他人能够实现诸如惰性求值和无限序列之类的方式的方式。 接下来，我们将研究如何使用这些库。
+这就是 Lazy.js，Bacon.js 和其他人能够实现诸如惰性求值和无限序列之类的方式的方式。 接下来，我们将研究如何使用这些库。
 
 ## 主要函数式编程
 
@@ -563,9 +563,9 @@ console.log(lighterRedNumSteps(2)); // Return: 'ff2222'
 
 这就是我们要编写自己的：‘a little application’编程方式。
 
-在这个例子中，我们有一个老板告诉我们，我们需要一个用于跟踪员工可用性状态的web应用程序。这家虚构公司的所有员工只有一个工作：使用我们的网站。员工上班时会签到，离开时会签退。但这还不够，它还需要随着内容的变化自动更新内容，因此我们的老板不必不断刷新页面。
+在这个例子中，我们有一个老板告诉我们，我们需要一个用于跟踪员工可用性状态的 web 应用程序。这家虚构公司的所有员工只有一个工作：使用我们的网站。员工上班时会签到，离开时会签退。但这还不够，它还需要随着内容的变化自动更新内容，因此我们的老板不必不断刷新页面。
 
-我们将使用Lazy.js作为我们的功能库：我们不必假装要处理所有登录和注销的用户，WebSocket，数据库等等，而是假装有一个通用应用程序对象为我们完成此任务的完美API。
+我们将使用 Lazy.js 作为我们的功能库：我们不必假装要处理所有登录和注销的用户，WebSocket，数据库等等，而是假装有一个通用应用程序对象为我们完成此任务的完美 API。
 
 所以现在，让我们把丑陋的部分，界面和创造副作用的部分去掉。
 
@@ -594,7 +594,7 @@ app.container.innerHTML = receptors
 
 仅显示可用性列表就足够了，但我们希望它是反响应式的，这会给我们带来第一个难点。
 
-通过使用Lazy.js库按顺序存储对象（在调用toArray()方法之前它实际上不会计算任何东西），我们可以利用其惰性求值来提供一种功能性的响应式编程。
+通过使用 Lazy.js 库按顺序存储对象（在调用 toArray()方法之前它实际上不会计算任何东西），我们可以利用其惰性求值来提供一种功能性的响应式编程。
 
 ```js
 var lazyReceptors = Lazy(receptors).map(function(r) {
@@ -603,7 +603,7 @@ var lazyReceptors = Lazy(receptors).map(function(r) {
 app.container.innerHTML = lazyReceptors.toArray().join("");
 ```
 
-因为Receptor.render()方法返回新的HTML而不是修改当前HTML，所以我们要做的就是将innerHTML参数设置为其输出。
+因为 Receptor.render()方法返回新的 HTML 而不是修改当前 HTML，所以我们要做的就是将 innerHTML 参数设置为其输出。
 
 用于用户管理的通用应用程序将提供回调方法供我们使用。
 
@@ -618,11 +618,11 @@ app.onUserLogout = function() {
 };
 ```
 
-这样，用户每次登录或注销时，都会再次计算lazyReceptors参数，并且将使用最新值打印可用性列表。
+这样，用户每次登录或注销时，都会再次计算 lazyReceptors 参数，并且将使用最新值打印可用性列表。
 
 ## 事件处理
 
-如果应用程序不提供用户登录和注销时的回调该怎么办？ 回调很混乱，代码就变成了面条式代码。相反，我们可以通过直接观察用户来确定它。如果用户的网页处于焦点位置，则他/她必须处于活动状态且可用。我们可以使用JavaScript的focus和blur事件。
+如果应用程序不提供用户登录和注销时的回调该怎么办？ 回调很混乱，代码就变成了面条式代码。相反，我们可以通过直接观察用户来确定它。如果用户的网页处于焦点位置，则他/她必须处于活动状态且可用。我们可以使用 JavaScript 的 focus 和 blur 事件。
 
 ```js
 window.addEventListener("focus", function(event) {
@@ -637,7 +637,7 @@ window.addEventListener("blur", function(event) {
 });
 ```
 
-等一下，事件不是也有响应式吗？ 也可以惰性计算它们吗？ 在Lazy.js库中，甚至有一个方便的方法。
+等一下，事件不是也有响应式吗？ 也可以惰性计算它们吗？ 在 Lazy.js 库中，甚至有一个方便的方法。
 
 ```js
 var focusedReceptors = Lazy.events(window, "focus").each(function(e) {
@@ -658,7 +658,7 @@ var blurredReceptors = Lazy.events(window, "blur").each(function(e) {
 
 到目前为止，我们的老板很喜欢这个应用程序，但他指出，如果一名员工在离开前一天没有关闭页面就从不注销，那么该应用程序会记录该员工仍然工作。
 
-为了确定某个员工是否在网站上处于活动状态，我们可以监视键盘和鼠标事件。假设他们被认为在30分钟没有活动之后就不可用了。
+为了确定某个员工是否在网站上处于活动状态，我们可以监视键盘和鼠标事件。假设他们被认为在 30 分钟没有活动之后就不可用了。
 
 ```js
 var timeout = null;
@@ -673,6 +673,183 @@ var inputs = Lazy.events(window, "mousemove").each(function(e) {
 });
 ```
 
-Lazy.js库使我们很容易将事件处理为可以映射的无限流。它之所以能够做到这一点，是因为它使用函数组合来控制执行顺序。
+Lazy.js 库使我们很容易将事件处理为可以映射的无限流。它之所以能够做到这一点，是因为它使用函数组合来控制执行顺序。
 
 但这一切都有点问题。如果没有可以锁定的用户输入事件呢？如果有一个属性值一直在变化呢？在下一节中，我们将详细分析这个问题。
+
+## 响应式函数编程
+
+让我们来构建另一种几乎相同的应用程序。一种使用函数式编程对状态变化做出响应的程序。但是，这一次，应用程序将无法依赖事件侦听器。
+
+想象一下，你在一家新闻媒体公司工作，老板让你开发一个 web 页面，这个应用可以跟踪选举日的政府选举结果。。当本地区域提交结果时，数据不断流入，因此要显示在页面上的结果非常活跃。但我们还需要按每个区域跟踪结果，因此将有多个对象要跟踪。
+
+与其创建一个面向对象的层次结构来对接口建模，不如将其声明性地描述为不可变数据。我们可以用纯函数和半纯函数链来转换它，它们的唯一最终副作用是更新绝对必须保持的任何状态位（理想情况下，不是很多）。
+
+我们将使用 Bacon.js 库，该库将能够快速开发响应式函数编程（FRP）应用程序。该应用程序仅在一年中的某一天（选举日）使用，而我们的老板认为应该花相应的时间。借助函数式编程和 Bacon.js 等之类的库，我们将在预期一半的时间完成它。
+
+首先，我们需要一些对象来代表投票区域，比如州、省、区等等。
+
+```js
+function Region(name, percent, parties) {
+  // mutable properties:
+  this.name = name;
+  this.percent = percent; // % of precincts reported
+  this.parties = parties; // political parties
+  // return an HTML representation
+  this.render = function() {
+    var lis = this.parties.map(function(p) {
+      return "<li>" + p.name + ": " + p.votes + "</li>";
+    });
+    var output = "<h2>" + this.name + "</h2>";
+    output += "<ul>" + lis.join("") + "</ul>";
+    output += "Percent reported: " + this.percent;
+    return output;
+  };
+}
+function getRegions(data) {
+  return JSON.parse(data).map(function(obj) {
+    return new Region(obj.name, obj.percent, obj.parties);
+  });
+}
+var url = "http://api.server.com/election-data?format=json";
+var data = jQuery.ajax(url);
+var regions = getRegions(data);
+app.container.innerHTML = regions
+  .map(function(r) {
+    return r.render();
+  })
+  .join("");
+```
+
+尽管以上内容仅显示静态的选举结果列表就足够了，但我们需要一种动态更新区域的方法。 Bacon.js 和响应式函数编程就派上用场了。
+
+### 响应式
+
+Bacon.js 具有一个函数 Bacon.fromPoll()，该函数可让我们创建事件流，该事件只是在给定间隔上调用的函数和流。 subscription()函数使我们可以向流订阅一个处理函数。 因为是惰性的，所以没有订阅者，流实际上不会做任何事情。
+
+```js
+var eventStream = Bacon.fromPoll(10000, function() {
+  return Bacon.Next;
+});
+var subscriber = eventStream.subscribe(function() {
+  var url = "http://api.server.com/election-data?format=json";
+  var data = jQuery.ajax(url);
+  var newRegions = getRegions(data);
+  container.innerHTML = newRegions
+    .map(function(r) {
+      return r.render();
+    })
+    .join("");
+});
+```
+
+通过基本上将其置于每 10 秒运行一次的循环中，我们可以完成工作。 但是这种方法会反复请求，效率极低。不是最佳的解决方案，我们应该更深入研究 Bacon.js 库。
+
+在 Bacon 中，有`EventStreams`和`Properties`参数。属性可以被认为是变量，随着时间的推移会随着事件的变化而变化。因为它们仍然依赖一系列事件，属性相对于其 EventStream 随时间变化。
+
+Bacon.js 库还有另外一个技巧。 Bacon.fromPromise()函数是一种使用 Promise 将事件发送到流中的方法。 jQuery1.5.0 版开始，jQuery AJAX 实现了 promises 接口。 因此，我们需要做的就是编写一个 AJAX 搜索函数，该函数在异步调用完成时发出事件。 每当 Promise 被执行时，它都会调用 EvenStream 的订阅。
+
+```js
+var url = "http://api.server.com/election-data?format=json";
+var eventStream = Bacon.fromPromise(jQuery.ajax(url));
+
+var subscriber = eventStream.onValue(function(data) {
+  newRegions = getRegions(data);
+
+  container.innerHTML = newRegions
+    .map(function(r) {
+      return r.render();
+    })
+    .join("");
+});
+```
+
+Promise 可以被视为最终的求值。 使用 Bacon.js 库，我们只需要关注等待最终值。
+
+## 综述
+
+既然我们已经讨论了响应式，我们终于可以实现一些方法了。
+
+我们可以使用纯函数链来修改订阅，以完成计算和过滤不需要的结果等操作，并且可以在创建 onclick()时处理函数中为创建的按钮进行（和完成）所有操作。
+
+```js
+// create the eventStream out side of the functions
+var eventStream = Bacon.onPromise(jQuery.ajax(url));
+var subscribe = null;
+var url = "http://api.server.com/election-data?format=json";
+// our un-modified subscriber
+$("button#showAll").click(function() {
+  var subscriber = eventStream.onValue(function(data) {
+    var newRegions = getRegions(data).map(function(r) {
+      return new Region(r.name, r.percent, r.parties);
+    });
+    container.innerHTML = newRegions
+      .map(function(r) {
+        return r.render();
+      })
+      .join("");
+  });
+});
+// a button for showing the total votes
+$("button#showTotal").click(function() {
+  var subscriber = eventStream.onValue(function(data) {
+    var emptyRegion = new Region("empty", 0, [
+      {
+        name: "Republican",
+        votes: 0
+      },
+      {
+        name: "Democrat",
+        votes: 0
+      }
+    ]);
+    var totalRegions = getRegions(data).reduce(function(r1, r2) {
+      newParties = r1.parties.map(function(x, i) {
+        return {
+          name: r1.parties[i].name,
+          votes: r1.parties[i].votes + r2.parties[i].votes
+        };
+      });
+      newRegion = new Region(
+        "Total",
+        (r1.percent + r2.percent) / 2,
+        newParties
+      );
+      return newRegion;
+    }, emptyRegion);
+    container.innerHTML = totalRegions.render();
+  });
+});
+// a button for only displaying regions that are reporting > 50%
+$("button#showMostlyReported").click(function() {
+  var subscriber = eventStream.onValue(function(data) {
+    var newRegions = getRegions(data)
+      .map(function(r) {
+        if (r.percent > 50) return r;
+        else return null;
+      })
+      .filter(function(r) {
+        return r != null;
+      });
+    container.innerHTML = newRegions
+      .map(function(r) {
+        return r.render();
+      })
+      .join("");
+  });
+});
+```
+
+这样做的好处是，当用户在几个按钮之间点击时，事件流不会更改，而订阅者会更改，这使所有操作都顺利进行。
+
+## 小结
+
+JavaScript是一门优美的语言
+
+它的内在美真正在函数式编程中大放异彩。它给JavaScript赋予了它卓越的可扩展性，它允许一级函数可以做很多事情，这样方法彼此叠加，功能越来越强大。
+
+在本章中，我们首先学习JavaScript的函数范式。 我们介绍了函数工厂，柯里化，函数组成和函数正常运行所需。 我们构建了一个模块化方法。 然后，展示了如何使用一些功能库，这些函数库本身使用这些相同的概念，即函数组合，来控制执行顺序。
+
+在本章中，我们讨论了函数式编程的几种类型：数据流范型编程，主要是函数式编程和函数响应式式编程。它们之间并没有什么不同，它们只是在不同的情况下应用函数式编程的不同模式。
+
+在前一章中，我们简要地提到了理论范畴。在下一章中，我们将学习更多关于它是什么以及如何使用它的知识。
