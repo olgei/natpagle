@@ -244,3 +244,536 @@ console.log(plusplusall([1, "2", 3])); // error is thrown
 ```
 
 arrayOf函数的有趣之处在于它也可以处理类型安全性。 当为字符串传递类型安全函数时，将返回字符串数组的类型安全函数。 类型安全性像身份函数态射一样对待。 这为数组包含所有正确的类型提供了方式。
+
+## 回顾函数组合
+
+函数是我们可以为其创建函子的另一种原语。 该函子称为`fcompose`。我们将函子定义为从容器中获取值并对其应用函数的对象。 当该容器是一个函数时，我们只需调用它即可获取其内部值。
+
+我们已经知道什么是函数组合，但是让我们看看它们在范畴理论驱动的环境中可以做什么。
+
+函数组合是关联的。如果你的高中代数老师和我一样，教你什么是属性，而不是它能做什么。实际上，组合是关联的属性所能做的事情。
+
+![img](https://blog.ahthw.com/wp-content/uploads/2019/12/WX20191229-230353@2x.png)
+
+我们可以进行任何内部组合，无论如何组合。 请勿将此与可交换属性混淆。ƒ o g并不总是等于g o ƒ。换言之，字符串的第一个单词的反义词与字符串的第一个单词的反义词不同。
+
+这一切意味着，只要每个函数的输入来自前一个函数的输出，那么应用哪个函数和以什么顺序无关紧要。但是，如果右边的函数依赖左边的函数，那么就不能只有一个求值顺序吗？从左到右？但是如果将其封装起来，那么我们可以把控它，不管我们感觉如何。这就是在JavaScript中惰性计算的原因。
+
+![img](https://blog.ahthw.com/wp-content/uploads/2019/12/8027-86964e9a39d1.png)
+
+让我们重写函数组成，而不是作为函数原型的扩展，而是作为一个独立的函数，它将使我们受益匪浅。 基本形式如下：
+
+```js
+var fcompose = function(f, g) {
+  return function() {
+    return f.call(this, g.apply(this, arguments));
+  };
+};
+```
+
+但我们需要它来处理任意数量的实参。
+
+```js
+var fcompose = function() {
+  // first make sure all arguments are functions
+  var funcs = arrayOf(func)(arguments);
+  // return a function that applies all the functions
+  return function() {
+    var argsOfFuncs = arguments;
+    for (var i = funcs.length; i > 0; i -= 1) {
+      argsOfFuncs = [funcs[i].apply(this, args)];
+    }
+    return args[0];
+  };
+};
+// example:
+var f = fcompose(negate, square, mult2, add1);
+f(2); // Returns: -36
+```
+
+既然我们已经封装了这些函数，我们就可以控制它们了。我们可以重写compose函数，以便每个函数接受另一个函数作为输入，存储它，并返回一个执行相同操作的对象。我们可以接受源中每个元素的一个数组，执行组合的所有操作（每个map()、filter()等等，组合在一起），最后将结果存储到一个新数组中，而不是接受一个数组作为输入，对它执行一些操作，然后为每个操作返回一个新数组。这是通过函数组合的惰性求值。没有理由在这里重新发明轮子。许多库都很好地实现了这个概念，包括Lazy.js、Bacon.js和wu.js库。
+
+由于采用了这种不同的模型，我们可以做更多的事情：异步迭代，异步事件处理，惰性求值，甚至自动并行化。
+
+`自动并行化？在计算机科学界有一个说法：不可能。但这真的不可能吗？摩尔定律的下一个进化飞跃可能是一个编译器，它可以为我们并行化代码，函数组合也可以吗？不，这样不太管用。JavaScript引擎实际上是在进行并行化，不是自动的，而是经过深思熟虑的代码。Compose只是让引擎有机会将其拆分为并行进程。但这本身就很酷。`
+
+## Monads
+
+Monad是可帮助您编写功能的工具。
+
+与基本类型一样，monad是可以用作函子“触及”的容器的结构。函子抓取数据，对其进行处理，将其放入一个新的monad中，然后返回。
+
+我们将关注三个monad：
+
+- Maybes
+- Promises
+- Lenses
+
+所以除了数组（map）和函数（compose），我们还有五个函子（map，compose，may，promise和lens）。这些只是许多其他函子和单子中的一部分。
+
+### Maybes
+
+Maybes允许我们优雅地处理可能为空并具有默认值的数据。maybe是一个变量，它要么有一些值要么没有，对调用者来说无关紧要。
+
+就其本身而言，这似乎没什么大不了的。大家都知道，使用if-else语句很容易完成空检查：
+
+```js
+if (getUsername() == null) {
+  username = "Anonymous";
+} else {
+  username = getUsername();
+}
+```
+
+但是在函数式编程中，我们脱离了逐行处理方式，而是使用函数和数据的管道。如果我们必须在中间断开链来检查值是否存在，我们就必须创建临时变量并编写更多代码。Maybes是帮助我们保持逻辑在管道中流动的工具。
+
+要实现Maybes，我们首先需要创建一些构造函数。
+
+```js
+// the Maybe monad constructor, empty for now
+var Maybe = function() {};
+// the None instance, a wrapper for an object with no value
+var None = function() {};
+None.prototype = Object.create(Maybe.prototype);
+None.prototype.toString = function() {
+  return "None";
+};
+// now we can write the `none` function
+// saves us from having to write `new None()` all the time
+var none = function() {
+  return new None();
+};
+// and the Just instance, a wrapper for an object with a value
+var Just = function(x) {
+  return (this.x = x);
+};
+Just.prototype = Object.create(Maybe.prototype);
+Just.prototype.toString = function() {
+  return "Just " + this.x;
+};
+var just = function(x) {
+  return new Just(x);
+};
+```
+
+我们可以编写maybe函数。它返回一个新函数，该函数要么不返回任何内容，要么返回maybe。
+
+它是一个函子：
+
+```js
+var maybe = function(m) {
+  if (m instanceof None) {
+    return m;
+  } else if (m instanceof Just) {
+    return just(m.x);
+  } else {
+    throw new TypeError(
+      "Error: Just or None expected, " + m.toString() + " given."
+    );
+  }
+};
+```
+
+我们也可以像创建数组一样创建函子生成器:
+
+```js
+var maybeOf = function(f) {
+  return function(m) {
+    if (m instanceof None) {
+      return m;
+    } else if (m instanceof Just) {
+      return just(f(m.x));
+    } else {
+      throw new TypeError(
+        "Error: Just or None expected, " + m.toString() + " given."
+      );
+    }
+  };
+};
+```
+
+所以Maybe是monad，maybe是函子，maybeOf返回已经分配给态射的函子。我们需要向Maybe monad对象添加一个方法，帮助我们更直观地使用它。
+
+```js
+Maybe.prototype.orElse = function(y) {
+  if (this instanceof Just) {
+    return this.x;
+  } else {
+    return y;
+  }
+};
+```
+
+在其原型中，maybes可以直接使用。
+
+```js
+maybe(just(123)).x; // Returns 123
+maybeOf(plusplus)(just(123)).x; // Returns 124
+maybe(plusplus)(none()).orElse("none"); // returns 'none'
+```
+
+任何返回一个随后被执行的方法的操作都非常复杂。所以我们可以通过调用curry()函数使它更简洁一些。
+
+```js
+maybePlusPlus = maybeOf.curry()(plusplus);
+maybePlusPlus(just(123)).x; // returns 123
+maybePlusPlus(none()).orElse("none"); // returns none
+```
+
+当抽象出直接调用none()和just()函数时，maybes的真正强大就会显露。我们将使用一个示例对象User来实现这一点，该对象使用mays作为用户名。
+
+```js
+var User = function() {
+  this.username = none(); // initially set to `none`
+};
+User.prototype.setUsername = function(name) {
+  this.username = just(str(name)); // it's now a `just
+};
+User.prototype.getUsernameMaybe = function() {
+  var usernameMaybe = maybeOf.curry()(str);
+  return usernameMaybe(this.username).orElse("anonymous");
+};
+var user = new User();
+user.getUsernameMaybe(); // Returns 'anonymous'
+user.setUsername("Laura");
+user.getUsernameMaybe(); // Returns 'Laura'
+```
+
+我们有了一个强大而安全的方法来定义默认值。记住这个User对象，因为我们将在本章后面使用它。
+
+## Promises
+
+`承诺的本质是它们不受环境变化的影响。-Frank Underwood，纸牌屋`
+
+在函数式编程中，我们经常使用管道和数据流：函数链，其中每个函数产生的数据类型将被下一个消耗。但是，其中许多函数是异步的：readFile、events、AJAX等。与其使用连续传递样式和深度嵌套的回调，不如如何修改这些函数的返回类型以指示结果？通过将它们包装在promises中。
+
+Promises就像是回调的功能等价物。显然，回调不具有全部功能，因为如果有多个函数正在改变相同的数据，则可能存在争用条件和错误。Promises solve能解决这个问题。
+
+你应该用Promises来解决它：
+
+```js
+fs.readFile("file.json", function(err, val) {
+  if (err) {
+    console.error("unable to read file");
+  } else {
+    try {
+      val = JSON.parse(val);
+      console.log(val.success);
+    } catch (e) {
+      console.error("invalid json in file");
+    }
+  }
+});
+```
+
+使用以下代码：
+
+```js
+fs.readFileAsync("file.json")
+  .then(JSON.parse)
+  .then(function(val) {
+    console.log(val.success);
+  })
+  .catch(SyntaxError, function(e) {
+    console.error("invalid json in file");
+  })
+  .catch(function(e) {
+    console.error("unable to read file");
+  });
+```
+
+上面的代码来自[bluebird](https://github.com/petkaantonov/bluebird)的README：一个功能齐全的Promises/a+实现，性能非常好。Promises/A+是用JavaScript实现Promises的规范。(当时考虑到JavaScript社区目前的争论，我们将把实现留给Promises/A+团队，因为它比maybes复杂得多。)
+
+但这里有一个实现的片段：
+
+```js
+// the Promise monad
+var Promise = require("bluebird");
+// the promise functor
+var promise = function(fn, receiver) {
+  return function() {
+    var slice = Array.prototype.slice,
+      args = slice.call(arguments, 0, fn.length - 1),
+      promise = new Promise();
+    args.push(function() {
+      var results = slice.call(arguments),
+        error = results.shift();
+      if (error) promise.reject(error);
+      else promise.resolve.apply(promise, results);
+    });
+    fn.apply(receiver, args);
+    return promise;
+  };
+};
+```
+
+现在，我们可以使用promise()函数将回调函数转换为返回promises的函数。
+
+```js
+var files = ["a.json", "b.json", "c.json"];
+readFileAsync = promise(fs.readFile);
+var data = files
+  .map(function(f) {
+    readFileAsync(f).then(JSON.parse);
+  })
+  .reduce(function(a, b) {
+    return $.extend({}, a, b);
+  });
+```
+
+## Lenses
+
+程序员真正喜欢monad的另一个原因是它们使编写库变得非常容易。为了探索这一点，让我们使用更多的函数来扩展User对象以getting和getting值，但是，我们将使用lenses而不是使用getter和setter。
+
+lenses是一流的getter和setter。它们不仅允许我们获取和设置变量，还允许我们在变量上运行函数。但是，它不是对原始数据进行改变，而是克隆并返回由函数修改的新数据。它们迫使数据是不可变的，这对于安全性和一致性以及库都非常有用。无论应用程序是什么，它们都非常适合优雅的代码，引入额外的数组副本对性能的影响不是很大。
+
+在编写lens()函数之前，让我们看看它是如何工作的。
+
+```js
+var first = lens(
+  function(a) {
+    return arr(a)[0];
+  }, // get
+  function(a, b) {
+    return [b].concat(arr(a).slice(1));
+  } // set
+);
+first([1, 2, 3]); // outputs 1
+first.set([1, 2, 3], 5); // outputs [5, 2, 3]
+function tenTimes(x) {
+  return x * 10;
+}
+first.modify(tenTimes, [1, 2, 3]); // outputs [10,2,3]
+```
+
+这是lens()函数的工作方式。 它返回定义了get，set和mod的defined.函数。 lens()函数本身就是一个函子。
+
+```js
+var lens = fuction(get, set) {
+  var f = function (a) {
+    return get(a)
+  };
+
+  f.get = function (a) {return get(a)};
+  f.set = set;
+  f.mod = function (f, a) {return set(a, f(get(a)))};
+
+  return f;
+};
+```
+
+我们来举个例子。我们将在前面的示例中扩展User对象。
+
+```js
+// userName :: User -> str
+var userName = lens(
+  function(u) {
+    return u.getUsernameMaybe();
+  }, // get
+  function(u, v) {
+    // set
+    u.setUsername(v);
+    return u.getUsernameMaybe();
+  }
+);
+var bob = new User();
+bob.setUsername("Bob");
+userName.get(bob); // returns 'Bob'
+userName.set(bob, "Bobby"); //return 'Bobby'
+userName.get(bob); // returns 'Bobby'
+userName.mod(strToUpper, bob); // returns 'BOBBY'
+strToUpper.compose(userName.set)(bob, "robert"); // returns "ROBERT";
+userName.get(bob); // returns 'robert'
+```
+
+## jQuery是一个monad
+
+如果你认为所有这些抽象的关于范畴、函子和单子都没有实际的应用，请考虑一下。 jQuery是流行的JavaScript库，它为使用HTML提供了一个增强的接口，它提供了用于处理HTML的增强接口，它是一个独立的库。
+
+jQuery对象是monad，其方法是函子实际上，它们是一种称为endofunctors的特殊函子。 Endofunctors是返回与输入相同类别的函子，即F :: X->X。每个jQuery方法都接受一个jQuery对象并返回一个jQuery对象，该对象允许方法被链接，并且它们将具有类型签名。jFunc：：jQuery obj->jQuery obj。
+
+这也是jQuery插件框架的功能所在。 如果插件将jQuery对象作为输入并返回一个作为输出，那么可以将其插入链中。
+
+monad是函子“接触”以获取数据的容器。 这样，数据可以由库保护和控制。 jQuery通过其许多方法提供对基础数据（包装的HTML元素集）的访问。
+
+jQuery对象本身是匿名函数调用的结果。
+
+```js
+var jQuery = (function () {
+  var j = function (selector, context) {
+  var jq-obj = new j.fn.init(selector, context);
+  return jq-obj;
+};
+
+j.fn = j.prototype = {
+  init: function (selector, context) {
+    if (!selector) {
+      return this;
+    }
+  }
+};
+
+j.fn.init.prototype = j.fn;
+  return j;
+})();
+```
+
+在此高度简化的jQuery版本中，它返回定义j对象的函数，该对象实际上只是增强的init构造函数。
+
+```js
+var $ = jQuery(); // the function is returned and assigned to `$`
+var x = $("#select-me"); // jQuery object is returned
+```
+
+就像函子将值从容器中取出一样，jQuery包装HTML元素并提供对它们的访问，而不是直接修改HTML元素。
+
+jQuery并不经常公布这一点，但它有自己的map()方法来将HTML元素对象从包装器中取出。 就像fmap()方法一样，元素被提升，对它们进行某些处理，然后将它们放回容器中。 这就是jQuery运行中的许多后台命令工作原理。
+
+```js
+$("li").map(function(index, element) {
+  // do something to the element
+  return element;
+});
+
+```
+
+另一个用于处理HTML元素的库Prototype.js不能像这样工作。Prototype直接通过helpers修改HTML元素。因此，它在JavaScript社区中并没有得到推崇。
+
+## 功能实现
+
+现在是我们正式将范畴理论定义为JavaScript对象的时候了。 类别是对象（类型）和态射（仅对这些类型起作用的函数）。 这是一种非常高级的，完全声明式的编程方式，它可以确保代码极其安全可靠，对于担心并发性和类型安全性的API和库来说，这是完美的。
+
+首先，我们需要一个函数来帮助我们创建态射。 我们将其称为homoMorph（），因为它们将是同态的。 它将返回一个函数，它将返回一个期望传递函数的函数，并根据输入生成该函数的组合。输入是态射接受作为输入并给予作为输出的类型。 就像我们的类型签名一样，即`// morph :: num-> num-> [num]`，只有最后一个是输出。
+
+```js
+var homoMorph = function() /* input1, input2,..., inputN, output */
+{
+  var before = checkTypes(
+    arrayOf(func)(
+      Array.prototype.slice.call(arguments, 0, arguments.length - 1)
+    )
+  );
+  var after = func(arguments[arguments.length - 1]);
+  return function(middle) {
+    return function(args) {
+      return after(middle.apply(this, before([].slice.apply(arguments))));
+    };
+  };
+};
+// now we don't need to add type signature comments
+// because now they're built right into the function declaration
+add = homoMorph(
+  num,
+  num,
+  num
+)(function(a, b) {
+  return a + b;
+});
+add(12, 24); // returns 36
+add("a", "b"); // throws error
+homoMorph(
+  num,
+  num,
+  num
+)(function(a, b) {
+  return a + b;
+})(18, 24); // returns 42
+```
+
+homoMorph()函数非常复杂。 它使用闭包（请参见第2章，函数编程基础）返回一个接受函数并检查其输入和输出值以确保类型安全的函数。 为此，它依赖于一个辅助函数：checkTypes，其定义如下：
+
+```js
+var checkTypes = function(typeSafeties) {
+  arrayOf(func)(arr(typeSafeties));
+  var argLength = typeSafeties.length;
+  return function(args) {
+    arr(args);
+    if (args.length != argLength) {
+      throw new TypeError("Expected " + argLength + " arguments");
+    }
+    var results = [];
+    for (var i = 0; i < argLength; i++) {
+      results[i] = typeSafeties[i](args[i]);
+    }
+    return results;
+  };
+};
+```
+
+现在让我们正式定义一些同态（homomorphisms）。
+
+```js
+var lensHM = homoMorph(func, func, func)(lens);
+
+var userNameHM = lensHM(
+  function(u) {
+    return u.getUsernameMaybe();
+  }, // get
+  function(u, v) {
+    // setu.setUsername(v);
+    return u.getUsernameMaybe();
+  }
+);
+
+var strToUpperCase = homoMorph(
+  str,
+  str
+)(function(s) {
+  return s.toUpperCase();
+});
+
+var morphFirstLetter = homoMorph(
+  func,
+  str,
+  str
+)(function(f, s) {
+  return f(s[0]).concat(s.slice(1));
+});
+
+var capFirstLetter = homoMorph(
+  str,
+  str
+)(function(s) {
+  return morphFirstLetter(strToUpperCase, s);
+});
+```
+
+最后，我们可以综合下。 以下示例包括函数组和，lens，同态性(homomorphisms)等等。
+
+```js
+// homomorphic lenses
+var bill = new User();
+userNameHM.set(bill, "William"); // Returns: 'William'
+userNameHM.get(bill); // Returns: 'William'
+
+// compose
+var capatolizedUsername = fcompose(capFirstLetter, userNameHM.get);
+capatolizedUsername(bill, "bill"); // Returns: 'Bill'
+
+// it's a good idea to use homoMorph on .set and .get too
+var getUserName = homoMorph(obj, str)(userNameHM.get);
+var setUserName = homoMorph(obj, str, str)(userNameHM.set);
+getUserName(bill); // Returns: 'Bill'
+setUserName(bill, "Billy"); // Returns: 'Billy'
+
+// now we can rewrite capatolizeUsername with the new setter
+capatolizedUsername = fcompose(capFirstLetter, setUserName);
+capatolizedUsername(bill, "will"); // Returns: 'Will'
+getUserName(bill); // Returns: 'will'
+```
+
+以上的代码是非常声明式的，安全的，可靠的。
+
+`代码是声明式的意味着什么？ 在“命令式”编程中，我们编写一系列指令，以告诉机器如何执行所需的操作。 在函数式编程中，我们描述值之间的关系，这些值告诉机器我们要计算的内容，并且机器找出指令序列来实现它。 函数式编程是声明性的。`
+
+整个库和api都可以这样构造，这样程序员就可以自由地编写代码，而不必担心并发性和类型安全，因为这些担心是在后台处理的。
+
+## 小结
+
+大约每2000人中就有一人患有[通感症](https://baike.baidu.com/item/%E9%80%9A%E6%84%9F%E7%97%87/1079189)，比如说他们在吃好吃的东西的时候，会听到美妙的音乐，听到美妙的音乐会闻到花的香气，绿色可能在他们感觉里是可爱的小熊，难过的情绪对他们来说可能是白色的绵羊。然而，还有一种更为罕见的形式，即句子和段落与品味和感受相关联。
+
+对这些人来说，他们不会逐字逐句地解释。他们查看整个页面/文档/程序，了解它的味道不是在嘴里而是在头脑中。然后他们把文本的各个部分像拼图一样拼在一起。
+
+这就是编写完全声明性代码的方式：描述值之间关系的代码，这些值告诉机器我们希望它计算什么。 程序的各个部分不是按行顺序排列的指令。 通感学也许能够自然地做到这一点，但是只要稍加练习，任何人都可以学习如何将关系性拼图拼凑在一起。
+
+在本章中，我们研究了适用于函数式编程的几个数学概念，以及它们如何使我们在数据之间建立关系。 接下来，我们将探讨JavaScript中的递归和其他高级主题。
