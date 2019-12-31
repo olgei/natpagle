@@ -137,3 +137,203 @@ var trampoline = function(f) {
   return f;
 };
 ```
+
+要真正实现tail-call消除，我们需要使用thunks。 为此，我们可以使用bind()函数，该函数使我们可以将this关键字分配给另一个对象的方法应用于一个对象。 在内部，它与call关键字相同，但已链接到方法并返回一个新的绑定函数。 bind()函数实际上执行部分应用程序，但实际上确实可以部分应用。
+
+要真正实现尾部调用消除，我们需要使用thunks。为此，我们可以使用bind（）函数，该函数允许我们将一个方法应用于一个对象，并将此关键字分配给另一个对象。在内部，它与call关键字相同，但它链接到方法并返回一个新的绑定函数。bind（）函数实际上执行部分应用程序，尽管方式非常有限。
+
+```js
+var factorial = function(n) {
+  var _fact = function(x, n) {
+    if (n == 0) {
+      // base case
+      return x;
+    } else {
+      // recursive case
+      return _fact.bind(null, n * x, n - 1);
+    }
+  };
+  return trampoline(_fact.bind(null, 1, n));
+};
+```
+
+但是，编写fact.bind(null，...)方法很麻烦，并且会使代码阅读困难。 取而代之的是，让我们编写自己的函数来创建thunk()， 函数做以下几件事：
+
+- thunk()函数必须模拟_fact.bind(null，n * x，n-1)方法返回一个未求值的函数
+- thunk()函数应包含另外两个函数：
+  - 用于处理给定函数，以及
+  - 用于处理调用给定函数时将使用的函数参数
+
+这样，我们就可以编写函数了。我们只需要几行代码就可以编写它。
+
+```js
+var thunk = function(fn) {
+  return function() {
+    var args = Array.prototype.slice.apply(arguments);
+    return function() {
+      return fn.apply(this, args);
+    };
+  };
+};
+```
+
+现在我们可以在阶乘算法中使用thunk()函数，如下所示：
+
+```js
+var factorial = function(n) {
+  var fact = function(x, n) {
+    if (n == 0) {
+      return x;
+    } else {
+      return thunk(fact)(n * x, n - 1);
+    }
+  };
+  return trampoline(thunk(fact)(1, n));
+};
+```
+
+另外，我们可以通过将_fact()函数定义为thunk()函数来进一步简化它。通过将内部函数定义为thunk()函数，我们就不用在内部函数定义和return语句中都使用thunk()函数了。
+
+```js
+var factorial = function(n) {
+  var _fact = thunk(function(x, n) {
+    if (n == 0) {
+      // base case
+      return x;
+    } else {
+      // recursive case
+      return _fact(n * x, n - 1);
+    }
+  });
+  return trampoline(_fact(1, n));
+};
+```
+
+结果令人满意。 对于无尾递归，递归调用的函数_fact()几乎透明地作为迭代处理
+
+最后，让我们看看trampoline()和thunk()函数如何与我们更有意义的树遍历示例一起工作。下面案例说明如何使用trampolining和thunk来遍历数据树：
+
+```js
+var treeTraverse = function(trunk) {
+  var _traverse = thunk(function(node) {
+    node.doSomething();
+    node.children.forEach(_traverse);
+  }
+  
+  trampoline(_traverse(trunk));
+}
+```
+
+我们已经解决了尾部递归的问题。但还有更好的办法吗？如果我们可以简单地将递归函数转换为非递归函数呢？下一节，我们看看如何做。
+
+## Y-Combinator推导
+
+在计算机科学中，Y-combinator推导甚至让编程大师们感到震惊。它将递归函数自动转换为非递归函数的能力，这就是为什么Douglas Crockford将其称为“计算机科学中最奇怪、最奇妙的产物之一”的原因，而Sussman和Steele曾经说过，“这种方法真的很了不起”。
+
+264/5000
+因此，将递归功能带到膝盖的计算机科学的真正卓越，奇特的奇特产物必须庞大而复杂，对吗？ 不，不完全是。 它在JavaScript中的实现只有九行，非常奇怪。 它们如下：
+
+它在JavaScript中的实现只有九行的代码。具体如下：
+
+```js
+var Y = function(F) {
+  return (function(f) {
+    return f(f);
+  })(function(f) {
+    return F(function(x) {
+      return f(f)(x);
+    });
+  });
+};
+```
+
+它的工作原理如下：它找到作为参数传入的函数的“固定点”。定点提供了另一种考虑功能的方法，而不是计算机编程理论中的递归和迭代。它仅通过使用匿名函数表达式，函数应用程序和变量引用来完成此操作。这里注意，Y并没有引用它自己。实际上，所有这些都是匿名函数。（[知乎：函数式编程的 Y Combinator 有哪些实用价值？](https://www.zhihu.com/question/20115649)）
+
+正如你可能已经猜到的，Y-combinator来自lambda表达式。它实际上是在另一个叫做U-combinator的组合器的帮助下导出的。组合器是一种特殊的高阶函数，它只使用函数应用程序和早期定义的组合器来定义输入的结果。
+
+为了演示Y-combinator，我们将再次讨论阶乘问题，但是我们需要对阶乘函数的定义稍有不同。我们编写的函数不是递归函数，该函数是阶乘的数学定义。 然后，我们可以将其传递给Y-combinator。
+
+```js
+var FactorialGen = function(factorial) {
+  return (function(n) {
+  if (n == 0) {
+      // base case
+      return 1;
+    } else {
+    // recursive case
+    return n * factorial(n – 1);
+    }
+  });
+};
+Factorial = Y(FactorialGen);
+Factorial(10); // 3628800
+```
+
+但是，当我们给它一个很大的数字时，堆栈会溢出，就像使用了没有trampolining函数（蹦床函数）的尾递归一样。
+
+```js
+Factorial(23456); // RangeError: Maximum call stack size exceeded
+```
+
+但是我们可以将Y-combinator用于蹦床函数，如下所示：
+
+```js
+var FactorialGen2 = function(factorial) {
+  return function(n) {
+    var factorial = thunk(function(x, n) {
+      if (n == 0) {
+        return x;
+      } else {
+        return factorial(n * x, n - 1);
+      }
+    });
+    return trampoline(factorial(1, n));
+  };
+};
+var Factorial2 = Y(FactorialGen2);
+Factorial2(10); // 3628800
+Factorial2(23456); // Infinity
+```
+
+我们还可以重新排列Y-combinator来执行一种叫做Memoization的操作。
+
+## Memoization
+
+Memoization是JavaScript中的一种技术，通过缓存结果并在下一个操作中重新使用缓存来加速查找费时的操作。
+
+尽管Y组合器比递归快得多，但它仍然相对较慢。 为了加快速度，我们可以创建一个记忆定点组合器：类似Y的组合器，用于缓存中间函数调用的结果。
+
+尽管Y-combinator运算比递归运算快得多，但它仍然相对较慢。为了加快速度，我们可以创建一个Memoization优化组合：一个类似Y-combinator组合器，用于缓存中间函数调用的结果。
+
+```js
+var Ymem = function(F, cache) {
+  if (!cache) {
+    cache = {}; // Create a new cache.
+  }
+  return function(arg) {
+    if (cache[arg]) {
+      // Answer in cache
+      return cache[arg];
+    }
+    // else compute the answer
+    var answer = F(function(n) {
+      return Ymem(F, cache)(n);
+    })(arg); // Compute the answer.
+    cache[arg] = answer; // Cache the answer.
+    return answer;
+  };
+};
+```
+
+那么要快多少呢？通过使用[http://jsperf.com/](http://jsperf.com/)，我们可以比较性能。
+
+以下结果是1到100之间的随机数。我们可以看到，记忆的（memoizing） Y-combinator快得多。 并且向其添加蹦床函数不会使它减慢太多。 您可以在以下URL上查看结果并自己运行测试：http://jsperf.com/memoizing-y-combinator-vs-tail-calloptimization/
+7。
+
+![img](https://blog.ahthw.com/wp-content/uploads/2019/12/y-combinator.png)
+
+底线是：在JavaScript中执行递归的最安全有效的方法是通过蹦床函数和thunk来使用带有Tail-call消除的memoization Y-combinator组合器。
+
+## 变量作用域
+
+JavaScript中变量作用域不是既定的，有人说JavaScript程序员可以通过对代码的理解程度来判断其作用域。
