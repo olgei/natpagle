@@ -1,6 +1,6 @@
 # 贡献内容
 
-如果你想参与这本书的共同创作，修改或添加内容，可以先 [Fork](https://github.com/halldwang/natpagle) 这本书的仓库，然后将修改的内容提交 [Pull requests](https://github.com/halldwang/natpagle/pulls) ；或者创建 [Issues](https://github.com/halldwang/natpagle/issues)。
+如果你想参与这本书的共同创作，修改或添加内容，可以先 [Fork](https://github.com/hex-translate/natpagle) 这本书的仓库，然后将修改的内容提交 [Pull requests](https://github.com/hex-translate/natpagle/pulls) ；或者创建 [Issues](https://github.com/hex-translate/natpagle/issues)。
 
 Fork 后的仓库如何同步本仓库？
 
@@ -25,7 +25,7 @@ git push origin master
 
 ## 生成电子书
 
-这本书使用 [Vuepress](https://vuepress.vuejs.org/zh/) 撰写并生成[网站](https://github.com/halldwang/natpagle/)，请查看 `package.json` 中的 `scripts` 配置和 `/scripts` 目录中的脚本来了解这本书的构建和发布过程。
+这本书使用 [Vuepress](https://vuepress.vuejs.org/zh/) 撰写并生成[网站](https://github.com/hex-translate/natpagle)，请查看 `package.json` 中的 `scripts` 配置和 `/scripts` 目录中的脚本来了解这本书的构建和发布过程。
 
 ```bash
 # 初始化 nodejs 依赖
@@ -50,4 +50,4 @@ vuepress build .
 
 ## 更新日志
 
-[https://github.com/halldwang/natpagle/commits/master](https://github.com/halldwang/natpagle/commits/master)
+[https://github.com/hex-translate/natpagle/tree/master](https://github.com/hex-translate/natpagle/tree/master)
