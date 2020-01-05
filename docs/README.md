@@ -4,9 +4,9 @@
 
 近几年来随着 Haskell、Scala、Clojure 等这些充满学究气息的原生支持函数式编程的偏门语言越来越受到关注，同时主流的 Java、JavaScript、Python 甚至 C++都陆续支持函数式编程。特别值得一提的是 JavaScript 在 nodejs 出现后成为第一种从前端到后台的全栈语言，除此之外 JavaScript 支持多范式编程。应用函数式编程最大挑战就是思维模式的改变——从传统面向对象的范式改变到函数式编程范式。
 
-Functional Programming in JavaScript 是 javascript 函数式编程极具代表性的原作书籍，由于版权原因及商业化原因，15 年出版的这本至今未被中文翻译和中文售卖，于是本人尝试着翻译，希望在翻译的过程中有所收益，欢迎朋友们加入一起翻译。
+《Functional Programming in JavaScript》 是 javascript 函数式编程极具代表性的原作书籍，这本书至今未被中文翻译和发售，于是尝试着翻译，希望在翻译的过程中有所收获，欢迎朋友们加入一起翻译。
 
-本书利用业余时间翻译，如果用词错误，还请不吝赐教。
+本书利用业余时间翻译，如果理解和用词错误，还请不吝赐教。
 
 ![Front End Handbook 2018 Cover](https://blog.ahthw.com/wp-content/uploads/2019/12/Functional_Programming_in_JavaScript.jpg)
 
