@@ -21,7 +21,7 @@
 - [第四章：JavaScript中的函数式编程实现](https://github.ahthw.com/natpagle/book/chapter-fourth.html)
 - [第五章：理论范畴](https://github.ahthw.com/natpagle/book/chapter-fifth.html)
 - [第六章：JavaScript中的高级函数和陷阱话题](https://github.ahthw.com/natpagle/book/chapter-sixth.html)
-- 第七章：JavaScript中的函数式和面向对象编程
+- [第七章：JavaScript中的函数式和面向对象编程](https://github.ahthw.com/natpagle/book/chapter-seventh.html)
 - 附录：JavaScript中常用函数的函数式方法
 
 ## 贡献内容
